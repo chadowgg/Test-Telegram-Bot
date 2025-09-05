@@ -18,7 +18,9 @@
 
 Створити базу даних PostgreSQL
 
-В папці resourse створити файл application.properties, скопіювати application.properties.example і замінити значення ${______} на власні. 
+В папці resourse створити файл application.properties 
+
+Cкопіювати application.properties.example вставити в application.properties і замінити значення ${______} на власні. 
 
 Додати в папку resourse ваш json файл з Google Cloud. 
 
