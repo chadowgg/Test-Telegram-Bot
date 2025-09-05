@@ -16,7 +16,7 @@
 
 Завантажити всі файли. 
 
-Створити базу даних в PostgreSQL
+Створити базу даних PostgreSQL
 
 В папці resourse створити файл application.properties, скопіювати application.properties.example і замінити значення ${______} на власні. 
 
