@@ -1,0 +1,19 @@
+spring.application.name=test-telegram-bot
+bot.name=Garage Racer Test Bot
+bot.token=${TELEGRAM_BOT_TOKEN}
+openai.api.key=${OPENAI_API_KEY}
+
+spring.datasource.url=${URL_DB}
+spring.datasource.username=${NAME_DB}
+spring.datasource.password=${PASSWORD_DB}
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+spring.jpa.properties.hibernate.default_schema=${SCHEMA_DB}
+spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.hibernate.ddl-auto=update
+
+spring.flyway.enabled=true
+spring.flyway.locations=classpath:db/migration
+spring.flyway.schemas=${SCHEMA_DB}
+
+spring.flyway.clean-disabled=false
