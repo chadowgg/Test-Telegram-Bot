@@ -2,28 +2,26 @@ package com.example.test.telegram.bot.service;
 
 import com.example.test.telegram.bot.entity.Feedback;
 import com.example.test.telegram.bot.repository.FeedbackRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class FeedbackService {
 
     private final FeedbackRepository feedbackRepository;
+    private final TrelloService trelloService;
 
-    public FeedbackService(FeedbackRepository feedbackRepository) {
-        this.feedbackRepository = feedbackRepository;
-    }
-
-    public void saveFeedbackFromAI(String responseBody) {
+    public void saveFeedbackFromAI(String responseBody, String feedback) {
         String[] lines = responseBody.split("\n");
 
-        String feedback = "";
+        String status = "";
         int criticality = 0;
         String recommendation = "";
 
         for (String line : lines) {
-            System.out.println(line);
             if (line.startsWith("Відгук:")) {
-                feedback = line.split(":")[1].trim();
+                status = line.split(":")[1].trim();
             } else if (line.startsWith("Критичність:")) {
                 criticality = Integer.parseInt(line.split(":")[1].trim());
             } else if (line.startsWith("Рекомендація:")) {
@@ -31,8 +29,13 @@ public class FeedbackService {
             }
         }
 
+        // Створення trello-карти якщо критичність 4 або 5
+        if (criticality > 3) {
+            trelloService.createTask(feedback, recommendation);
+        }
+
         Feedback userFeedback = new Feedback();
-        userFeedback.setFeedback(feedback);
+        userFeedback.setFeedback(status);
         userFeedback.setCriticality(criticality);
         userFeedback.setRecommendation(recommendation);
 

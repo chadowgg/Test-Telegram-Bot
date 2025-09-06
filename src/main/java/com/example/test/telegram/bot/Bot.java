@@ -1,16 +1,16 @@
 package com.example.test.telegram.bot;
 
+import com.example.test.telegram.bot.entity.BotResources;
 import com.example.test.telegram.bot.service.BotService;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.http.HttpCredentialsAdapter;
@@ -19,10 +19,10 @@ import com.google.api.client.http.HttpRequestFactory;
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpContent;
 import com.google.api.client.http.ByteArrayContent;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Objects;
 
 @Component
 public class Bot extends TelegramLongPollingBot {
@@ -72,7 +72,7 @@ public class Bot extends TelegramLongPollingBot {
                         text, result
                 );
 
-                // Завантажуємо Service Account
+                // Завантаження Service Account
                 GoogleCredentials credentials = null;
                 try {
                     credentials = GoogleCredentials.fromStream(
@@ -103,15 +103,23 @@ public class Bot extends TelegramLongPollingBot {
         if (update.hasCallbackQuery()) {
             long chatId = update.getCallbackQuery().getMessage().getChatId();
             String data = update.getCallbackQuery().getData();
+
+            if (!users.containsKey(chatId)) {
+                sendMessage(chatId, "Будь ласка, почніть з команди /start");
+                return;
+            }
+
             UserState state = users.get(chatId);
 
             if (state != null && "first_entry".equals(state.status)) {
                 state.role = data;
                 state.status = "login_complete";
+                deleteMessage(chatId, update.getCallbackQuery().getMessage().getMessageId());
                 sendMessage(chatId, "Оберіть вашу філію:", branchKeyboard());
             } else if (state != null && "login_complete".equals(state.status)) {
                 state.branch = data;
                 state.status = "active";
+                deleteMessage(chatId, update.getCallbackQuery().getMessage().getMessageId());
                 sendMessage(chatId, "Реєстрація завершена!\nВаша роль: " + state.role +
                         "\nФілія: " + state.branch);
             }
@@ -126,12 +134,23 @@ public class Bot extends TelegramLongPollingBot {
             message.setReplyMarkup(keyboard);
             execute(message);
         } catch (Exception e) {
-            e.printStackTrace();
+            System.out.println("Помилка відправлення повідомлення: " + e.getMessage());
         }
     }
 
     private void sendMessage(long chatId, String text) {
         sendMessage(chatId, text, null);
+    }
+
+    private void deleteMessage(long chatId, int messageId) {
+        try {
+            DeleteMessage deleteMessage = new DeleteMessage();
+            deleteMessage.setChatId(chatId);
+            deleteMessage.setMessageId(messageId);
+            execute(deleteMessage); // Використовуємо метод execute з вашого бота
+        } catch (TelegramApiException e) {
+            System.out.println("Помилка при видаленні повідомлення: " + e.getMessage());
+        }
     }
 
     // Ролі
@@ -153,7 +172,6 @@ public class Bot extends TelegramLongPollingBot {
         markup.setKeyboard(List.of(row));
         return markup;
     }
-
 
     // Філій
     private InlineKeyboardMarkup branchKeyboard() {

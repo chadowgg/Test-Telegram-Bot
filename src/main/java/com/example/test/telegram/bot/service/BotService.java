@@ -16,7 +16,7 @@ public class BotService {
         try {
             result = openAiService.analyzeSentiment(text);
         } catch (Exception e) {
-            e.printStackTrace();
+            System.out.println("Помилка аналізу OpenAI: " + e.getMessage());
         }
         return result;
     }

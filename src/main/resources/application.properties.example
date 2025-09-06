@@ -17,3 +17,7 @@ spring.flyway.locations=classpath:db/migration
 spring.flyway.schemas=${SCHEMA_DB}
 
 spring.flyway.clean-disabled=false
+
+trello.api.key=${TRELLO.KEY}
+trello.token=${TRELLO.TOKEN}
+trello.id.list=${TRELLO.ID.LIST}

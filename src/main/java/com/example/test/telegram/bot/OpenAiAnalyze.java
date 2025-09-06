@@ -65,25 +65,25 @@ public class OpenAiAnalyze {
                 .build();
 
         // Виконання запиту та обробка відповіді
+        String aiContent = null;
         try (Response response = client.newCall(request).execute()) {
-            if (!response.isSuccessful()) {
-                throw new IOException("Неочікуваний код: " + response);
-            }
-
+            assert response.body() != null;
             String responseBody = response.body().string().trim();
             JSONObject obj = new JSONObject(responseBody);
 
             // Отримуємо тільки content з відповіді
-            String aiContent = obj.getJSONArray("choices")
+            aiContent = obj.getJSONArray("choices")
                     .getJSONObject(0)
                     .getJSONObject("message")
                     .getString("content")
                     .trim();
 
-            feedbackService.saveFeedbackFromAI(aiContent);
-
-            return aiContent;
+            feedbackService.saveFeedbackFromAI(aiContent, text);
+        } catch (IOException e) {
+            System.out.println("Виникла помилка обробки OpenAI: " + e.getMessage());
         }
+
+        return aiContent;
     }
 }
 
