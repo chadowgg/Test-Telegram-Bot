@@ -1,7 +1,14 @@
 package com.example.test.telegram.bot;
 
 import com.example.test.telegram.bot.entity.BotResources;
+import com.example.test.telegram.bot.entity.User;
+import com.example.test.telegram.bot.enums.Affiliate;
+import com.example.test.telegram.bot.enums.Position;
+import com.example.test.telegram.bot.enums.RegistrationStatus;
+import com.example.test.telegram.bot.repository.UserRepository;
 import com.example.test.telegram.bot.service.BotService;
+import com.example.test.telegram.bot.service.FeedbackService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -28,6 +35,10 @@ import java.nio.charset.StandardCharsets;
 public class Bot extends TelegramLongPollingBot {
     private final BotResources botResources;
     private final BotService botService;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private FeedbackService feedbackService;
 
     public Bot(BotResources botResources, BotService botService) {
         this.botResources = botResources;
@@ -44,8 +55,8 @@ public class Bot extends TelegramLongPollingBot {
         return botResources.getToken();
     }
 
-    // Зберігаються дані користувачів, які вони обрали
-    private final Map<Long, UserState> users = new HashMap<>();
+    // Тимчасово зберігаються дані користувачів
+    private final Map<Long, User> users = new HashMap<>();
 
     @Override
     public void onUpdateReceived(Update update) {
@@ -54,19 +65,31 @@ public class Bot extends TelegramLongPollingBot {
             long chatId = update.getMessage().getChatId();
 
             if (text.equals("/start")) {
-                if (!users.containsKey(chatId)) {
-                    users.put(chatId, new UserState("first_entry"));
+                if (!userRepository.existsById(chatId)) {
+                    User newUser = new User();
+                    newUser.setId(chatId);
+                    newUser.setRegistrationStatus(RegistrationStatus.FIRST_ENTRY);
+
+                    users.put(chatId, newUser);
+
                     sendMessage(chatId, "Вітаю\nОберіть вашу роль:", roleKeyboard());
                 } else {
                     sendMessage(chatId, "Ви вже зареєстровані");
                 }
             }
 
-            if (!text.startsWith("/") && !users.get(chatId).status.equals("first_entry")) {
+            // Обробка повідомлень
+            Optional<User> userOpt = userRepository.findById(chatId);
+            if (userOpt.isPresent() && !text.startsWith("/") &&
+                    userOpt.get().getRegistrationStatus() != RegistrationStatus.FIRST_ENTRY) {
+
+                User user = userOpt.get();
                 String result = botService.analyzeFeedback(text);
+                feedbackService.saveFeedbackFromAI(text, result, user);
+
                 System.out.println("Результат OpenAI:\n" + result);
 
-                String documentId = "1ZLsi6yRa-IiCbDFsG04wKNpzOdP9sbg_oESyZ5fv00g";
+                String documentId = "1R4VB7iC8i4vlR1vA0wGkYxGasahXUCU_mKbzVcaUZ4M";
                 String jsonRequest = String.format(
                         "{ \"requests\": [ { \"insertText\": { \"text\": \"Відгук користувача: %s\\n%s\\n\\n\\n\", \"endOfSegmentLocation\": {} } } ] }",
                         text, result
@@ -102,26 +125,32 @@ public class Bot extends TelegramLongPollingBot {
         // Обробка натискання кнопок
         if (update.hasCallbackQuery()) {
             long chatId = update.getCallbackQuery().getMessage().getChatId();
+            int messageId = update.getCallbackQuery().getMessage().getMessageId();
             String data = update.getCallbackQuery().getData();
 
-            if (!users.containsKey(chatId)) {
+            deleteMessage(chatId, messageId);
+
+            User user = users.get(chatId);
+            if (user == null) {
                 sendMessage(chatId, "Будь ласка, почніть з команди /start");
                 return;
             }
 
-            UserState state = users.get(chatId);
+            if (user.getRegistrationStatus() == RegistrationStatus.FIRST_ENTRY) {
+                user.setPosition(Position.valueOf(data));
+                user.setRegistrationStatus(RegistrationStatus.LOGIN_COMPLETE);
 
-            if (state != null && "first_entry".equals(state.status)) {
-                state.role = data;
-                state.status = "login_complete";
-                deleteMessage(chatId, update.getCallbackQuery().getMessage().getMessageId());
                 sendMessage(chatId, "Оберіть вашу філію:", branchKeyboard());
-            } else if (state != null && "login_complete".equals(state.status)) {
-                state.branch = data;
-                state.status = "active";
-                deleteMessage(chatId, update.getCallbackQuery().getMessage().getMessageId());
-                sendMessage(chatId, "Реєстрація завершена!\nВаша роль: " + state.role +
-                        "\nФілія: " + state.branch);
+            } else if (user.getRegistrationStatus() == RegistrationStatus.LOGIN_COMPLETE) {
+                user.setAffiliate(Affiliate.valueOf(data));
+                user.setRegistrationStatus(RegistrationStatus.ACTIVE);
+
+                userRepository.save(user);
+//                users.remove(chatId);
+
+                sendMessage(chatId, "Реєстрація завершена!\nВаша роль: "
+                        + user.getPosition().getDisplayName() +
+                        "\nФілія: " + user.getAffiliate().getDisplayName());
             }
         }
     }
@@ -155,19 +184,15 @@ public class Bot extends TelegramLongPollingBot {
 
     // Ролі
     private InlineKeyboardMarkup roleKeyboard() {
-        InlineKeyboardButton mech = new InlineKeyboardButton();
-        mech.setText("Механік");
-        mech.setCallbackData("Механік");
+        List<InlineKeyboardButton> row = new ArrayList<>();
 
-        InlineKeyboardButton electric = new InlineKeyboardButton();
-        electric.setText("Електрик");
-        electric.setCallbackData("Електрик");
+        for (Position position : Position.values()) {
+            InlineKeyboardButton button = new InlineKeyboardButton();
+            button.setText(position.getDisplayName());
+            button.setCallbackData(position.name());
+            row.add(button);
+        }
 
-        InlineKeyboardButton manager = new InlineKeyboardButton();
-        manager.setText("Менеджер");
-        manager.setCallbackData("Менеджер");
-
-        List<InlineKeyboardButton> row = List.of(mech, electric, manager);
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         markup.setKeyboard(List.of(row));
         return markup;
@@ -175,40 +200,17 @@ public class Bot extends TelegramLongPollingBot {
 
     // Філій
     private InlineKeyboardMarkup branchKeyboard() {
-        InlineKeyboardButton f1 = new InlineKeyboardButton();
-        f1.setText("Київ");
-        f1.setCallbackData("Київ");
+        List<InlineKeyboardButton> row = new ArrayList<>();
 
-        InlineKeyboardButton f2 = new InlineKeyboardButton();
-        f2.setText("Львів");
-        f2.setCallbackData("Львів");
+        for (Affiliate affiliate : Affiliate.values()) {
+            InlineKeyboardButton button = new InlineKeyboardButton();
+            button.setText(affiliate.getDisplayName());
+            button.setCallbackData(affiliate.name());
+            row.add(button);
+        }
 
-        InlineKeyboardButton f3 = new InlineKeyboardButton();
-        f3.setText("Запоріжжя");
-        f3.setCallbackData("Запоріжжя");
-
-        InlineKeyboardButton f4 = new InlineKeyboardButton();
-        f4.setText("Дніпро");
-        f4.setCallbackData("Дніпро");
-
-        InlineKeyboardButton f5 = new InlineKeyboardButton();
-        f5.setText("Ужгород");
-        f5.setCallbackData("Ужгород");
-
-        List<InlineKeyboardButton> row = List.of(f1, f2, f3, f4, f5);
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         markup.setKeyboard(List.of(row));
         return markup;
-    }
-
-    // Збереження стану користувача
-    static class UserState {
-        String status;
-        String role;
-        String branch;
-
-        public UserState(String status) {
-            this.status = status;
-        }
     }
 }

@@ -14,12 +14,9 @@ public class OpenAiAnalyze {
 
     private final String apiKey;
     private final OkHttpClient client = new OkHttpClient();
-    private final FeedbackService feedbackService;
 
-    public OpenAiAnalyze(@Value("${openai.api.key}") String apiKey,
-                         FeedbackService feedbackService) {
+    public OpenAiAnalyze(@Value("${openai.api.key}") String apiKey) {
         this.apiKey = apiKey;
-        this.feedbackService = feedbackService;
     }
 
     public String analyzeSentiment(String text) throws IOException {
@@ -77,8 +74,6 @@ public class OpenAiAnalyze {
                     .getJSONObject("message")
                     .getString("content")
                     .trim();
-
-            feedbackService.saveFeedbackFromAI(aiContent, text);
         } catch (IOException e) {
             System.out.println("Виникла помилка обробки OpenAI: " + e.getMessage());
         }

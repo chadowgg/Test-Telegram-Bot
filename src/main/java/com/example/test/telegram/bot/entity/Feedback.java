@@ -11,6 +11,10 @@ public class Feedback {
     @GeneratedValue(strategy= GenerationType.IDENTITY)
     private Integer id;
 
+    @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
     @Column(nullable = false, length = 1000)
     private String feedback;
 

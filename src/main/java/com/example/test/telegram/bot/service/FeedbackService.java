@@ -1,6 +1,7 @@
 package com.example.test.telegram.bot.service;
 
 import com.example.test.telegram.bot.entity.Feedback;
+import com.example.test.telegram.bot.entity.User;
 import com.example.test.telegram.bot.repository.FeedbackRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -12,7 +13,7 @@ public class FeedbackService {
     private final FeedbackRepository feedbackRepository;
     private final TrelloService trelloService;
 
-    public void saveFeedbackFromAI(String responseBody, String feedback) {
+    public void saveFeedbackFromAI( String feedback, String responseBody, User user) {
         String[] lines = responseBody.split("\n");
 
         String status = "";
@@ -36,6 +37,7 @@ public class FeedbackService {
 
         Feedback userFeedback = new Feedback();
         userFeedback.setFeedback(status);
+        userFeedback.setUser(user);
         userFeedback.setCriticality(criticality);
         userFeedback.setRecommendation(recommendation);
 
