@@ -33,3 +33,17 @@ Cкопіювати application.properties.example вставити в applicati
 Перейти в телеграм і вести ім'я бота. 
 
 Натиснути старт.
+
+# Адмін панель
+
+Щоб використати адмін панель потрібно або додати через міграцію в V2__add_admin.sql 
+
+INSERT INTO users (id, affiliate, position, registration_status, role)
+VALUES (YOUR_ID_CHAT, 'KYIV', 'MANAGE', 'ACTIVE', 'ADMIN');
+
+або оновити права до ADMIN через міграцію в V3__update_user_to_admin.sql
+
+UPDATE users
+SET role = 'ADMIN'
+WHERE id = YOUR_ID_CHAT;
+
