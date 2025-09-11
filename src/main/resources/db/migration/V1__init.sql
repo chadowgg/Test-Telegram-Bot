@@ -2,7 +2,8 @@ CREATE TABLE users (
     id BIGINT PRIMARY KEY,
     affiliate VARCHAR(300),
     position VARCHAR(300),
-    registration_status VARCHAR(30)
+    registration_status VARCHAR(30),
+    role VARCHAR(30) DEFAULT 'USER'
 );
 
 CREATE TABLE user_feedback (
@@ -15,16 +16,16 @@ CREATE TABLE user_feedback (
 );
 
 INSERT INTO users (id, affiliate, position, registration_status) VALUES
-     (10001, 'KYIV', 'MECHANIK', 'ACTIVE'),
-     (10002, 'LVIV', 'ELECTRIC', 'ACTIVE'),
-     (10003, 'DNIPRO', 'MANAGER', 'ACTIVE'),
-     (10004, 'UZHHOROD', 'MECHANIK', 'ACTIVE'),
-     (10005, 'ZAPORIZHIA', 'ELECTRIC', 'ACTIVE'),
-     (10006, 'KYIV', 'MANAGER', 'ACTIVE'),
-     (10007, 'LVIV', 'MECHANIK', 'ACTIVE'),
-     (10008, 'DNIPRO', 'ELECTRIC', 'ACTIVE'),
-     (10009, 'UZHHOROD', 'MANAGER', 'ACTIVE'),
-     (10010, 'ZAPORIZHIA', 'MECHANIK', 'ACTIVE');
+     (10001, 'KYIV', 'MECHANIC', 'ACTIVE'),
+     (10002, 'LVIV', 'ELECTRICIAN', 'ACTIVE'),
+     (10003, 'DNIPRO', 'MANAGE', 'ACTIVE'),
+     (10004, 'UZHHOROD', 'MECHANIC', 'ACTIVE'),
+     (10005, 'ZAPORIZHIA', 'ELECTRICIAN', 'ACTIVE'),
+     (10006, 'KYIV', 'MANAGE', 'ACTIVE'),
+     (10007, 'LVIV', 'MECHANIC', 'ACTIVE'),
+     (10008, 'DNIPRO', 'ELECTRICIAN', 'ACTIVE'),
+     (10009, 'UZHHOROD', 'MANAGE', 'ACTIVE'),
+     (10010, 'ZAPORIZHIA', 'MECHANIC', 'ACTIVE');
 
 INSERT INTO user_feedback (user_id, feedback, criticality, recommendation) VALUES
     (10001, 'Проблеми з обладнанням на виробництві.', 2, 'Перевірити стан машин.'),

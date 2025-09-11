@@ -1,0 +1,2 @@
+INSERT INTO users (id, affiliate, position, registration_status, role)
+VALUES (YOUR_ID_CHAT, 'KYIV', 'MANAGE', 'ACTIVE', 'ADMIN');

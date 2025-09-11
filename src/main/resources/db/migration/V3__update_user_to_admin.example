@@ -1,0 +1,3 @@
+UPDATE users
+    role = 'ADMIN'
+WHERE id = YOUR_ID_CHAT;
